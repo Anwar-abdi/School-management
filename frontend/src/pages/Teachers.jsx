@@ -125,6 +125,7 @@ const Teachers = () => {
     phone: '',
     subject: '',
   });
+  const [errors, setErrors] = useState({});
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -135,21 +136,67 @@ const Teachers = () => {
     fetchTeachers();
   }, []);
 
-  const fetchTeachers = async () => {
-    try {
-      const response = await getTeachers();
-      setTeachers(response.data || []);
-    } catch {
-      setSnackbar({
-        open: true,
-        message: 'Failed to fetch teachers',
-        severity: 'error',
-      });
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Teacher ID validation
+    if (!formData.teacherId) {
+      newErrors.teacherId = 'Teacher ID is required';
+    } else if (!/^\d+$/.test(formData.teacherId)) {
+      newErrors.teacherId = 'Teacher ID must be a number';
+    }
+
+    // Name validation
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    } else if (formData.name.length < 2) {
+      newErrors.name = 'Name must be at least 2 characters long';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
+      newErrors.name = 'Name can only contain letters and spaces';
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+
+    // Phone validation
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^\d{10,}$/.test(formData.phone)) {
+      newErrors.phone = 'Phone number must be at least 10 digits';
+    }
+
+    // Subject validation
+    if (!formData.subject.trim()) {
+      newErrors.subject = 'Subject is required';
+    } else if (formData.subject.length < 2) {
+      newErrors.subject = 'Subject must be at least 2 characters long';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.subject)) {
+      newErrors.subject = 'Subject can only contain letters and spaces';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: '' });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       if (selectedTeacher) {
         await updateTeacher(selectedTeacher._id, formData);
@@ -160,12 +207,37 @@ const Teachers = () => {
       }
       fetchTeachers();
       handleCloseDialog();
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        (selectedTeacher
+          ? 'Failed to update teacher'
+          : 'Failed to add teacher');
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
+      });
+
+      // Handle duplicate key errors
+      if (error.response?.status === 400) {
+        if (errorMessage.includes('Teacher ID')) {
+          setErrors({ ...errors, teacherId: 'Teacher ID already exists' });
+        } else if (errorMessage.includes('Email')) {
+          setErrors({ ...errors, email: 'Email already exists' });
+        }
+      }
+    }
+  };
+
+  const fetchTeachers = async () => {
+    try {
+      const response = await getTeachers();
+      setTeachers(response.data || []);
     } catch {
       setSnackbar({
         open: true,
-        message: selectedTeacher
-          ? 'Failed to update teacher'
-          : 'Failed to add teacher',
+        message: 'Failed to fetch teachers',
         severity: 'error',
       });
     }
@@ -374,10 +446,11 @@ const Teachers = () => {
               label="Teacher ID"
               type="number"
               value={formData.teacherId}
-              onChange={(e) =>
-                setFormData({ ...formData, teacherId: e.target.value })
-              }
+              onChange={handleInputChange}
+              error={!!errors.teacherId}
+              helperText={errors.teacherId}
               required
+              disabled={!!selectedTeacher}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '12px',
@@ -392,10 +465,13 @@ const Teachers = () => {
               name="name"
               label="Name"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={handleInputChange}
+              error={!!errors.name}
+              helperText={errors.name}
               required
+              inputProps={{
+                maxLength: 50,
+              }}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '12px',
@@ -411,9 +487,9 @@ const Teachers = () => {
               label="Email"
               type="email"
               value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
+              onChange={handleInputChange}
+              error={!!errors.email}
+              helperText={errors.email}
               required
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -429,9 +505,9 @@ const Teachers = () => {
               name="phone"
               label="Phone"
               value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
+              onChange={handleInputChange}
+              error={!!errors.phone}
+              helperText={errors.phone}
               required
               inputProps={{
                 pattern: '\\d{10,}',
@@ -451,10 +527,13 @@ const Teachers = () => {
               name="subject"
               label="Subject"
               value={formData.subject}
-              onChange={(e) =>
-                setFormData({ ...formData, subject: e.target.value })
-              }
+              onChange={handleInputChange}
+              error={!!errors.subject}
+              helperText={errors.subject}
               required
+              inputProps={{
+                maxLength: 50,
+              }}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '12px',
