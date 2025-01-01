@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -27,7 +27,6 @@ import {
   Avatar,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SchoolIcon from '@mui/icons-material/School';
@@ -39,11 +38,11 @@ import {
   updateStudent,
 } from '../services/api';
 
-const StyledCard = styled(Card)(({ theme }) => ({
+const StyledCard = styled(Card)({
   background: 'linear-gradient(120deg, #1e3c72 0%, #2a5298 100%)',
   color: '#fff',
   borderRadius: '20px',
-  padding: theme.spacing(2),
+  padding: '20px',
   transition: 'all 0.3s ease-in-out',
   position: 'relative',
   overflow: 'hidden',
@@ -66,9 +65,9 @@ const StyledCard = styled(Card)(({ theme }) => ({
     transform: 'scale(1)',
     transition: 'transform 0.5s ease-out',
   },
-}));
+});
 
-const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
+const StyledTableContainer = styled(TableContainer)({
   borderRadius: '20px',
   boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
   overflow: 'hidden',
@@ -87,18 +86,18 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
       boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
     },
   },
-}));
+});
 
-const GlowingAvatar = styled(Avatar)(({ theme }) => ({
+const GlowingAvatar = styled(Avatar)({
   background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
   boxShadow: '0 0 15px rgba(33,203,243,0.3)',
   transition: 'transform 0.3s ease',
   '&:hover': {
     transform: 'scale(1.1)',
   },
-}));
+});
 
-const AnimatedProgress = styled(LinearProgress)(({ theme }) => ({
+const AnimatedProgress = styled(LinearProgress)({
   height: 8,
   borderRadius: 4,
   backgroundColor: 'rgba(255,255,255,0.2)',
@@ -107,14 +106,14 @@ const AnimatedProgress = styled(LinearProgress)(({ theme }) => ({
     background:
       'linear-gradient(90deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,1) 100%)',
   },
-}));
+});
 
-const StyledDialog = styled(Dialog)(({ theme }) => ({
+const StyledDialog = styled(Dialog)({
   '& .MuiDialog-paper': {
     borderRadius: '20px',
     boxShadow: '0 8px 32px rgba(30,60,114,0.2)',
   },
-}));
+});
 
 const Students = () => {
   const [students, setStudents] = useState([]);
@@ -139,7 +138,7 @@ const Students = () => {
     try {
       const response = await getStudents();
       setStudents(response.data);
-    } catch (error) {
+    } catch {
       showSnackbar('Failed to fetch students', 'error');
     }
   }, []);
@@ -151,47 +150,54 @@ const Students = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.ID.trim()) {
+    // ID validation
+    if (!formData.ID) {
       newErrors.ID = 'Student ID is required';
     } else if (!/^\d+$/.test(formData.ID)) {
-      newErrors.ID = 'ID should contain only numbers';
+      newErrors.ID = 'ID must be a number';
     }
 
+    // Name validation
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
-    } else if (formData.name.length < 2) {
-      newErrors.name = 'Name should be at least 2 characters long';
-    } else if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
-      newErrors.name = 'Name should contain only letters and spaces';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters long';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
+    // Address validation
     if (!formData.address.trim()) {
       newErrors.address = 'Address is required';
-    } else if (formData.address.length < 5) {
-      newErrors.address = 'Address should be at least 5 characters long';
+    } else if (formData.address.trim().length < 5) {
+      newErrors.address = 'Address must be at least 5 characters long';
     }
 
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email.trim().toLowerCase())) {
+      newErrors.email = 'Please enter a valid email';
+    }
+
+    // Gender validation
     if (!formData.gender) {
       newErrors.gender = 'Gender is required';
+    } else if (!['male', 'female'].includes(formData.gender)) {
+      newErrors.gender = 'Gender must be either male or female';
     }
 
+    // Date of Birth validation
     if (!formData.dateOfBirth) {
       newErrors.dateOfBirth = 'Date of Birth is required';
     } else {
       const dob = new Date(formData.dateOfBirth);
       const today = new Date();
-      const age = today.getFullYear() - dob.getFullYear();
+      const hundredYearsAgo = new Date();
+      hundredYearsAgo.setFullYear(today.getFullYear() - 100);
 
-      if (age < 5) {
-        newErrors.dateOfBirth = 'Student must be at least 5 years old';
-      } else if (age > 100) {
-        newErrors.dateOfBirth = 'Please enter a valid date of birth';
+      if (dob > today) {
+        newErrors.dateOfBirth = 'Date of Birth cannot be in the future';
+      } else if (dob < hundredYearsAgo) {
+        newErrors.dateOfBirth = 'Invalid date of birth';
       }
     }
 
@@ -239,30 +245,35 @@ const Students = () => {
       const dataToSubmit = {
         ...formData,
         ID: Number(formData.ID),
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        address: formData.address.trim(),
         dateOfBirth: new Date(formData.dateOfBirth).toISOString(),
       };
 
-      console.log('Submitting data:', dataToSubmit);
-      console.log('Selected student:', selectedStudent);
-
       if (selectedStudent) {
-        console.log('Updating student with ID:', selectedStudent._id);
-        const response = await updateStudent(selectedStudent._id, dataToSubmit);
-        console.log('Update response:', response);
+        await updateStudent(selectedStudent._id, dataToSubmit);
         await fetchStudents();
         showSnackbar('Student updated successfully', 'success');
         handleCloseDialog();
       } else {
-        const response = await createStudent(dataToSubmit);
-        console.log('Create response:', response);
+        await createStudent(dataToSubmit);
         await fetchStudents();
         showSnackbar('Student added successfully', 'success');
         handleCloseDialog();
       }
     } catch (error) {
-      console.error('Operation error:', error.response || error);
       const errorMessage = error.response?.data?.message || 'Operation failed';
       showSnackbar(errorMessage, 'error');
+
+      // Handle duplicate key errors
+      if (error.response?.status === 400) {
+        if (errorMessage.includes('ID')) {
+          setErrors((prev) => ({ ...prev, ID: 'Student ID already exists' }));
+        } else if (errorMessage.includes('email')) {
+          setErrors((prev) => ({ ...prev, email: 'Email already exists' }));
+        }
+      }
     }
   };
 
@@ -272,7 +283,7 @@ const Students = () => {
         await deleteStudent(id);
         showSnackbar('Student deleted successfully', 'success');
         fetchStudents();
-      } catch (error) {
+      } catch {
         showSnackbar('Failed to delete student', 'error');
       }
     }
@@ -455,9 +466,9 @@ const Students = () => {
               error={!!errors.ID}
               helperText={errors.ID}
               required
+              disabled={!!selectedStudent}
               inputProps={{
                 pattern: '[0-9]*',
-                maxLength: 10,
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -478,7 +489,7 @@ const Students = () => {
               helperText={errors.name}
               required
               inputProps={{
-                maxLength: 50,
+                minLength: 2,
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -519,6 +530,9 @@ const Students = () => {
               required
               multiline
               rows={2}
+              inputProps={{
+                minLength: 5,
+              }}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '12px',
