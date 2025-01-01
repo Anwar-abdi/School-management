@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -147,7 +148,7 @@ const Dashboard = () => {
             School Analytics Dashboard
           </Typography>
           <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-            Real-time overview of your school's performance
+            Real-time overview of your school&apos;s performance
           </Typography>
         </Box>
       </Box>
