@@ -21,15 +21,12 @@ router.post('/', async (req, res) => {
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({
-        message:
-          error.name === 'MongoServerError' && error.keyPattern.teacherId
-            ? 'Teacher ID already exists'
-            : 'Email already exists',
+        message: error.keyPattern.teacherId
+          ? 'Teacher ID already exists'
+          : 'Email already exists',
       });
     }
-    res.status(400).json({
-      message: error.message,
-    });
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -43,21 +40,16 @@ router.put('/:id', async (req, res) => {
     });
 
     if (existingTeacher) {
-      return res.status(400).json({
-        message: 'Email already exists',
-      });
+      return res.status(400).json({ message: 'Email already exists' });
     }
 
-    // Don't allow teacherId to be updated
+    // Exclude teacherId from update
     const { teacherId, ...updateData } = req.body;
 
     const updatedTeacher = await Teacher.findByIdAndUpdate(
       req.params.id,
       updateData,
-      {
-        new: true,
-        runValidators: true,
-      }
+      { new: true, runValidators: true }
     );
 
     if (!updatedTeacher) {
@@ -66,11 +58,6 @@ router.put('/:id', async (req, res) => {
 
     res.json(updatedTeacher);
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({
-        message: 'Email already exists',
-      });
-    }
     res.status(400).json({ message: error.message });
   }
 });
@@ -78,7 +65,10 @@ router.put('/:id', async (req, res) => {
 // Delete a teacher
 router.delete('/:id', async (req, res) => {
   try {
-    await Teacher.findByIdAndDelete(req.params.id);
+    const deletedTeacher = await Teacher.findByIdAndDelete(req.params.id);
+    if (!deletedTeacher) {
+      return res.status(404).json({ message: 'Teacher not found' });
+    }
     res.json({ message: 'Teacher deleted successfully.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
