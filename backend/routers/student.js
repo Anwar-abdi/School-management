@@ -26,67 +26,15 @@ router.post('/', async (req, res) => {
 // Update a student
 router.put('/:id', async (req, res) => {
   try {
-    console.log('Update request for ID:', req.params.id);
-    console.log('Update data:', req.body);
-
-    // Ensure the request body is properly formatted
-    const updateData = { ...req.body };
-
-    // Convert ID to number if it exists
-    if (updateData.ID) {
-      updateData.ID = Number(updateData.ID);
-    }
-
-    // Convert date string to Date object
-    if (updateData.dateOfBirth) {
-      updateData.dateOfBirth = new Date(updateData.dateOfBirth);
-    }
-
-    console.log('Processed update data:', updateData);
-
-    // First check if another student has the same ID or email (excluding current student)
-    const existingStudent = await Student.findOne({
-      $and: [
-        { _id: { $ne: req.params.id } },
-        {
-          $or: [{ ID: updateData.ID }, { email: updateData.email }],
-        },
-      ],
-    });
-
-    if (existingStudent) {
-      console.log('Duplicate found:', existingStudent);
-      return res.status(400).json({
-        message: `A student with this ${
-          existingStudent.ID === updateData.ID ? 'ID' : 'email'
-        } already exists`,
-      });
-    }
-
     const updatedStudent = await Student.findByIdAndUpdate(
       req.params.id,
-      updateData,
-      {
-        new: true, // Return the updated document
-        runValidators: true, // Run schema validations on update
-      }
+      req.body,
+      { new: true }
     );
-
-    if (!updatedStudent) {
-      console.log('Student not found with ID:', req.params.id);
+    if (!updatedStudent)
       return res.status(404).json({ message: 'Student not found' });
-    }
-
-    console.log('Successfully updated student:', updatedStudent);
     res.json(updatedStudent);
   } catch (error) {
-    console.error('Update error:', error);
-    // Check for duplicate key errors
-    if (error.code === 11000) {
-      return res.status(400).json({
-        message: 'A student with this ID or email already exists',
-      });
-    }
     res.status(400).json({ message: error.message });
   }
 });
