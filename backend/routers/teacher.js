@@ -13,4 +13,5 @@ router.post('/', createTeacher);
 router.put('/:id', updateTeacher);
 router.delete('/:id', deleteTeacher);
 
+
 export default router;

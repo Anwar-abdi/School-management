@@ -8,7 +8,6 @@ export const getAllStudents = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 export const createStudent = async (req, res) => {
   const newStudent = new Student(req.body);
   try {
@@ -18,6 +17,7 @@ export const createStudent = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
 
 export const updateStudent = async (req, res) => {
   try {
@@ -41,4 +41,12 @@ export const deleteStudent = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-};
+}
+
+
+
+export const creatStudent = async(req,res)=>{
+  const newStudent = new student(req.body)
+
+  await newStudent.save
+}
